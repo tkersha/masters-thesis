@@ -47,7 +47,7 @@ prov_colours<-c(c("AB" = "red",
 
 font_import() #only once
 loadfonts()
-fonts() # Check available fonts
+fonts()
 
 theme_set(theme_minimal() +
             theme(text = element_text(family = "Lato", size = 12)))
@@ -60,7 +60,7 @@ thesis_unclean <- Canada_dataset [,c ("responseid","wave", "prov_clean","ideolog
                                       "wave3_party","wave4_party","support_cp","oppose_cp",
                                       "strongoppose_cp")]
 
-#took all na's out of support_cp, oppose_cp, and strongoppose_cp & ideology
+#took all na's out of support_cp, oppose_cp, and strongoppose_cp
 thesis<-thesis_unclean[!is.na(thesis_unclean$support_cp),]
 thesis <- thesis[!is.na(thesis$oppose_cp),]
 thesis <- thesis[!is.na(thesis$strongoppose_cp),]
@@ -77,9 +77,8 @@ thesis<-thesis |> mutate(wave1_party=case_when(wave1_party=="ndp"~"New Democrati
                                        wave4_party=="People's Party of Canada"~"People's Party", 
                                        .default = wave4_party)) 
 
-#Lets create a new variable, 'cp_attitude' which turns support, oppose, and 
-#strongly oppose into a 4-point scale
-#if they selected 0 for all three, we made them a 0 (they seem indifferent), 
+#Lets create a new variable, 'cp_attitude' which turns support, oppose, and strongly oppose into a 4-point scale
+#if they selected 0 for all three, we made them a 0 (they seem indifferent) 
 #if they selected 1 for both oppose and strong oppose, we made them -2 (they seem very opposed)
 
 #Lets also turn edu5 and age3 into a numerical variable for future regression analyses
@@ -100,8 +99,7 @@ thesis<-thesis |> mutate(cp_attitude=case_when(support_cp=="1"~1,
 stargazer(thesis, title = "Table 2: Descriptive Statistics", type = "html", out="Table2final.htm")
 
 # Let's make a new categorical variable - party, assign each observation as party
-# Party for waves 1 and 2, is what they put for wave1_party, wave3_party for wave 3, 
-# wave4_party for waves 4 and 5
+# Party for waves 1 and 2, is what they put for wave1_party, wave3_party for wave 3, wave4_party for waves 4 and 5
 # This is because respondents were not asked their parties in waves 2 and 5
 
 thesis$party<-ifelse(thesis$wave=="wave1"| thesis$wave=="wave2", thesis$wave1_party,"NA")
@@ -109,6 +107,7 @@ thesis$party<-ifelse(thesis$wave=="wave3", thesis$wave3_party, thesis$party)
 thesis$party<-ifelse(thesis$wave=="wave4" | thesis$wave=="wave5", thesis$wave4_party, thesis$party)
 
 #check the correlations of the numeric variables of interest
+
 Correlations_unclean<-thesis[,c ("ideology","genderBIN", "frenchBIN", "bachelorsBIN",
                                  "income.NUM", "edu_NUM", "age_NUM", "trust.FED",
                                  "cp_attitude")]
@@ -120,16 +119,10 @@ CorrChart <- cor(correlations)
 stargazer(CorrChart, type = "html", out = "correlations.htm",
           title="Table 3: Correlations of Numeric Variables")
 
-
-#In CorrChart, we see that as ideology rises (becomes more right) by 1 point, trust in gov decreases by 0.185 points
-#and support for CP decreases by 0.374 points
-
-#lets graph this.. so first we find the mean of trust in government by ideology
-
-trust<- thesis%>%group_by(ideology)%>%summarise(mean_trust = mean(trust.FED, na.rm = TRUE))
-
 # Figure 1: Plotting the Trust in Government by Political Ideology #
 # We see that the more right wing a person is, the less trust they have in the feds
+
+trust<- thesis%>%group_by(ideology)%>%summarise(mean_trust = mean(trust.FED, na.rm = TRUE))
 
 ggplot(trust, aes(x = ideology, y = mean_trust)) +
   geom_col(fill="darkcyan") +
@@ -178,8 +171,7 @@ ggplot(ideology, aes(x = party, y = mean_ideology, fill=party)) +
     plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), 
                        "inches"))
   
-# Next, to plot the change in Attitude of Carbon Pricing over the waves
-# Find the mean of cp_attitude just by wave, and then by wave and party
+# Next, plot the change in Attitude of Carbon Pricing over the waves
 
 attitude<- thesis%>%group_by(wave)%>%summarise(mean_attitude = mean(cp_attitude)) %>%
   mutate(party = "All")
@@ -264,7 +256,7 @@ consistent_rearranged <- mean_consistent %>%
 
 write_csv(consistent_rearranged, "ConsistentByPartyByWave.csv")
 
-## Figure 7: Map Attitude by Province 
+## Figure 7: Map Attitude by Province ##
 #Maybe there is a provincial element we are missing
 
 attitude2<-thesis%>%group_by(prov_clean, wave)%>%summarise(mean_attitude = mean(cp_attitude))
@@ -282,7 +274,7 @@ ggplot(attitude2, aes(x = wave, y = mean_attitude, color = prov_clean)) +
     text = element_text(family = "Lato", size = 10),
     plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "inches"))
 
-#FIGURE 8: Look at difference between rebate and non-rebate provinces
+## FIGURE 8: Look at difference between rebate and non-rebate provinces ##
 #BC and QC don't have rebate = 0, ON and SK do have it = 1, AB is NA
 
 rebate <- thesis |>
@@ -309,7 +301,7 @@ ggplot(rebate, aes(x = wave, y = mean_cp_attitude, color = factor(rebateBIN), gr
     plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "inches")
   )
 
-# Figure 9: Let's look at attitude by political ideology
+## Figure 9: Let's look at attitude by political ideology ##
 
 attitude3<- thesis%>%group_by(ideology)%>%summarise(mean_attitude= mean(cp_attitude))
 
@@ -324,9 +316,7 @@ ggplot(attitude3, aes(x = ideology, y = mean_attitude)) +
     plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), 
                        "inches"))
 
-### Time for some regressions! Let's do a series of multivariate regressions of 
-#cp_attitude with other demographic variables and we should control for trust in
-#government
+### Time for some regressions ###
 
 thesis_lm <- filter(thesis, party %in% partiesilike)
 
@@ -339,7 +329,7 @@ thesis_lm <- thesis_lm |>
   mutate(rebateBIN = ifelse(prov_clean %in% c(1,4), 0, 
                             ifelse(prov_clean %in% c(2, 3), 1, NA))) 
 
-#Model for Attitude = ideology + trust + party + province + rebate
+## Model for Attitude = ideology + trust + party + province + rebate
 lm_ideology1<-lm(cp_attitude~ideology, data=thesis_lm)
 lm_ideology2<-lm(cp_attitude~ideology+trust.FED, data=thesis_lm)
 lm_ideology3<-lm(cp_attitude~ideology+trust.FED+party, data=thesis_lm)
@@ -388,13 +378,32 @@ ggplot(thesis, aes(x = ideology)) +
 ideology_table<- as.data.frame(table(thesis$ideology))
 write_csv(ideology_table, "IdeologyDistribution.csv")
 
+## appendix regressions ##
+
+lm_gender <- lm(cp_attitude~genderBIN, data=thesis)
+lm_french <-lm(cp_attitude~frenchBIN, data=thesis)
+lm_bachelors<-lm(cp_attitude~bachelorsBIN, data=thesis)
+lm_income<-lm(cp_attitude~income.NUM, data=thesis)
+lm_age <-lm(cp_attitude~age_NUM, data = thesis)
+lm_edu<-lm(cp_attitude~edu_NUM, data=thesis)
+
+# income is not very practical,The model explains only a very small proportion of the variability in cp_attitude
+
+# Create summary of all the models into 2 charts
+
+stargazer(lm_gender, lm_french, lm_bachelors, 
+          title = "Linear Regression Models - Dummy Variables", type = "html", out = "appendex_regressions.htm")
+
+stargazer( lm_income, lm_edu, lm_age,
+          title = "Linear Regression Models - Ordinal Variables", type = "html", out = "appendex_regressions2.htm")
+
 ## Stats Checks for Model 4 ##
 plot(lm_ideology4)
 
 #lets do VIF check 
 vif<-vif(lm_ideology4)
 
-par(mfrow = c(2, 2))  # Set up a 2x2 grid for plots
+par(mfrow = c(2, 2))
 
 # Residuals vs Fitted plot
 plot(lm_ideology4, which = 1)
@@ -408,105 +417,4 @@ plot(lm_ideology4, which = 3)
 # Residuals vs Leverage plot
 plot(lm_ideology4, which = 5)
 
-##
-##appendix regressions##
 
-lm_gender <- lm(cp_attitude~genderBIN, data=thesis)
-lm_french <-lm(cp_attitude~frenchBIN, data=thesis)
-lm_bachelors<-lm(cp_attitude~bachelorsBIN, data=thesis)
-lm_income<-lm(cp_attitude~income.NUM, data=thesis)
-lm_age <-lm(cp_attitude~age_NUM, data = thesis)
-lm_edu<-lm(cp_attitude~edu_NUM, data=thesis)
-
-#income is not very practical,The model explains only a very small proportion of the 
-#variability in cp_attitude
-
-# Create summary of all the models into 2 charts
-
-stargazer(lm_gender, lm_french, lm_bachelors, 
-          title = "Linear Regression Models - Dummy Variables", type = "html", out = "appendex_regressions.htm")
-
-stargazer( lm_income, lm_edu, lm_age,
-          title = "Linear Regression Models - Ordinal Variables", type = "html", out = "appendex_regressions2.htm")
-
-
-###########
-
-
-
-
-#creating dataset w only consistent voters, mutated names and created cp_attitude with range of opinions
-
-# experiment - same thing but with unconsistent voters 
-experiment<- thesis |> select(responseid, wave, trust.FED, wave1_party, wave3_party,wave4_party, 
-                              support_cp, oppose_cp, strongoppose_cp) |> 
-  mutate(cp_attitude=case_when(support_cp=="1"~1,
-                               oppose_cp=="1" & strongoppose_cp=="1"~-2,
-                               oppose_cp=="0" & strongoppose_cp=="1"~-2,
-                               oppose_cp=="1" & strongoppose_cp=="0"~-1)) |>
-  pivot_longer(cols=c(wave1_party, wave3_party, wave4_party), values_to="party", names_to = "party_wave") |>
-  mutate(party=case_when(party=="Conservatives"~"Conservative Party",
-                         party=="Liberals"~"Liberal Party",
-                         party=="People's Party of Canada"~"People's Party", 
-                         .default = party))|> 
-  filter(party %in% c("Bloc Québécois","Conservative Party", "Green Party", "Liberal Party", "ndp", "People's Party"))
-        
-ggplot(thesis, aes(x=wave, y=cp_attitude, fill=party)) + 
-  geom_boxplot()+
-  subset(thesis$party %in% c("Bloc Québécois","Conservative Party", "Green Party", "Liberal Party", "New Democratic Party", "People's Party"))
-
-#map trust.fed by party
-ggplot(trust, aes(x=wave, y=trust.FED, fill= party)) + 
-  facet_wrap(party ~.)+
-  geom_violin()
-
-#find the means of both datasets
-meanexp <- experiment %>% 
-  group_by(wave, party) %>% 
-  summarise(mean_sup = mean(as.numeric(as.character(support_cp)), na.rm = TRUE),
-            sd_sup = sd(as.numeric(as.character(support_cp)), na.rm = TRUE),
-            mean_att = mean(as.numeric(as.character(cp_attitude)), na.rm = TRUE),
-            sd_att = sd(as.numeric(as.character(cp_attitude)), na.rm = TRUE),
-            reallyno = mean(cp_attitude == -2, na.rm = TRUE),
-            no = mean(cp_attitude == -1, na.rm = TRUE),
-            yes = mean(cp_attitude == 1, na.rm = TRUE))
-
-meanexp_con <- experiment_con %>% 
-  group_by(wave, party) %>% 
-  summarise(mean_sup = mean(as.numeric(as.character(support_cp)), na.rm = TRUE),
-            sd_sup = sd(as.numeric(as.character(support_cp)), na.rm = TRUE),
-            mean_att = mean(as.numeric(as.character(cp_attitude)), na.rm = TRUE),
-            sd_att = sd(as.numeric(as.character(cp_attitude)), na.rm = TRUE),
-            reallyno = mean(cp_attitude == -2, na.rm = TRUE),
-            no = mean(cp_attitude == -1, na.rm = TRUE),
-            yes = mean(cp_attitude == 1, na.rm = TRUE))
-  
-#add other variables
-# try geom_bar
-#mean support over everyone
-ggplot(meanexp, aes(x=wave, y=mean_sup)) + 
-  facet_wrap(party ~ .) +
-  geom_col() 
-
-#mean attitude over everyone
-ggplot(meanexp, aes(x=wave, y=mean_att)) + 
-  facet_wrap(party ~ .) +
-  geom_col() 
-
-#mean support over consistent
-ggplot(meanexp_con, aes(x=wave, y=mean_sup)) + 
-  facet_wrap(party ~ .) +
-  geom_col() 
-
-#mean attitude over consistent
-ggplot(meanexp_con, aes(x=wave, y=mean_att)) + 
-  facet_wrap(party ~ .) +
-  geom_col() 
-
-#Proportion of responses by party
-
-pivotexp <- pivot_longer(meanexp, reallyno:yes, 
-                         names_to = "response", values_to = "prop")
-ggplot(data=pivotexp, aes(x=wave, y=prop, fill=response)) + 
-  facet_wrap(party ~ .) +
-  geom_col() 
